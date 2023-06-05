@@ -1,0 +1,5 @@
+gym
+swig
+pyproject
+pyproject.toml
+'gym[box2d]'
