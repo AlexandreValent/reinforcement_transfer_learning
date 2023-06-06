@@ -7,7 +7,6 @@ This module is used to train agents and obtain predictions.
 import random
 import torch
 import torch.nn
-import tensorflow as tf
 
 from rl_lunarlanding import network
 from rl_lunarlanding.config import CFG
@@ -21,13 +20,13 @@ class Agent:
     def __init__(self):
         pass
 
-    def set(self):
+    def learn(self):
         """
         Make the agent learn from a (s, a, r, s') tuple.
         """
         raise NotImplementedError
 
-    def get(self):
+    def choose(self):
         """
         Request a next action from the agent.
         """
@@ -39,13 +38,13 @@ class RandomAgent(Agent):
     A random playing agent class.
     """
 
-    def set(self, obs_old, act, rwd, obs_new):
+    def learn(self, obs_old, act, rwd, obs_new):
         """
         A random agent doesn't learn.
         """
         return
 
-    def get(self, obs_new):
+    def choose(self, obs_new):
         """
         Simply return a random action.
         """
@@ -61,13 +60,13 @@ class DQNAgent(Agent):
         self.net = network.DQN()
         self.opt = torch.optim.Adam(self.net.parameters(), lr = CFG.lr)
 
-    def set(self, obs_old, act, rwd, obs_new):
+    def learn(self, obs_old, act, rwd, obs_new):
         """
         Learn from a single observation sample.
         """
         obs_new = torch.tensor(obs_new)
 
-        # We get the network output
+        # We choose the network output
         out = self.net(torch.tensor(obs_old))[act]
 
         # We compute the target
@@ -82,10 +81,10 @@ class DQNAgent(Agent):
         loss.sum().backward()
         self.opt.step()
 
-    def get(self, obs_new, train):
+    def choose(self, obs_new, train):
         """
         Run an epsilon-greedy policy for next actino selection.
-        Set train = True for training purpose. False to get agent's metric.
+        learn train = True for training purpose. False to choose agent's metric.
         """
         # Return random action with probability epsilon
         if train and random.uniform(0, 1) < CFG.epsilon:
@@ -93,7 +92,7 @@ class DQNAgent(Agent):
 
         # Else, return action with highest value
         with torch.no_grad():
-            # Get the values of all possible actions
+            # choose the values of all possible actions
             val = self.net(torch.tensor(obs_new))
             # Choose the highest-values action
             return torch.argmax(val).numpy()
