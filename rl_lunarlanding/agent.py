@@ -7,18 +7,19 @@ This module is used to train agents and obtain predictions.
 import random
 import torch
 import torch.nn
+from random import sample
 
 from rl_lunarlanding import network
 from rl_lunarlanding.config import CFG
 
 
-class Agent:
+class Agent():
     """
     A learning agent parent class.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self,name):
+        self.name = name
 
     def learn(self):
         """
@@ -44,11 +45,11 @@ class RandomAgent(Agent):
         """
         return
 
-    def choose(self, obs_new):
+    def choose(self, obs_new,train):
         """
         Simply return a random action.
         """
-        return CFG.act_space.sample()
+        return sample(CFG.act_space,1)
 
 
 class DQNAgent(Agent):
