@@ -4,7 +4,11 @@ import numpy as np
 import random
 import torch
 import re
+from rl_lunarlanding import agent
 
+# Silent warning
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def get_train_data(env, agt, run_number):
     """
@@ -17,7 +21,7 @@ def get_train_data(env, agt, run_number):
 
     scores=[]
 
-    print(f"Start to get data with {agt.name}.")
+    print(f"👀 Start to get data with {agt.name}.")
     for i in range(1, run_number+1):
 
         obs_old, _ = env.reset()
@@ -46,16 +50,15 @@ def get_train_data(env, agt, run_number):
             obs_old = obs_new
 
         if i % 50 == 0:
-            print(f"⌛ Party {i}/{run_number} done.")
+            print(f"Party {i}/{run_number} done.")
 
         scores.append(score)
 
-    env.close()
     avg_score = round(np.array(scores).mean(),2)
     print(f"✅ Get data done with average score of {avg_score} on {run_number} parties.")
+    print("\n =================================== \n")
 
-    return None
-
+    return
 
 def lean_from_pickle(file_name, agt):
     #Initialisation du fichier pickle
@@ -76,13 +79,13 @@ def lean_from_pickle(file_name, agt):
     random.shuffle(data)
 
     # Training our agent
-    print(f"Start to train {agt.name}.")
+    print(f"👀 Start to train {agt.name}.")
     for i, obs in enumerate(data):
         obs_old, act, rwd, obs_new = obs
         agt.learn(obs_old, act, rwd, obs_new)
 
-        if i % 50000 == 0:
-            print(f"⌛ Passing observation {i}/{len(data)}.")
+        if i % 5000 == 0:
+            print(f"Passing observation {i}/{len(data)}.")
 
     print(f"✅ {agt.name} have learn from pickle.")
 
@@ -91,4 +94,24 @@ def lean_from_pickle(file_name, agt):
 
     torch.save(agt.net.state_dict(),f"saved_agents/{new_agent_name}.pth")
     print(f"💾 {new_agent_name} saved.")
+
+    print("\n =================================== \n")
+    return
+
+def auto_generation_from_random(env,nb_gen,name):
+
+    random_agent = agent.RandomAgent(f'random_{name}')
+    get_train_data(env,random_agent,100)
+
+    DQNAgent_G0 = agent.DQNAgent(f'{name}_G0')
+    lean_from_pickle(f'random_{name}.pickle', DQNAgent_G0)
+
+    for i in range (1,nb_gen):
+        print(f"Doing generation {i}")
+        DQNAgent = agent.DQNAgent(f'{name}_G{i}')
+        DQNAgent.net.load_state_dict(torch.load(f'saved_agents/{name}_G{i}.pth'))
+
+        get_train_data(env,DQNAgent,500)
+        lean_from_pickle(f"{name}_G{i}.pickle", DQNAgent)
+
     return
