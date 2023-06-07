@@ -1,57 +1,52 @@
 import os
 import pickle
-
+import numpy as np
 
 def get_train_data(env, agt, run_number):
     """
-    Run a given environment with a given agent.
+    Get data for training with a specified agent.
     """
 
     #Initialisation du fichier pickle
-    # fichier_pickle = f"training_data/_{agt.name}.pickle"
-    # file_path = "/trainin_data"
-    # fichier_pickle = open("/training_data",'wb')
     directory = 'training_data/'
-    filename = f'{agt.name}.pickle'
+    filename = f'{agt.name}.pickle' #Ajout l'env name
 
     # Combine the directory and filename to create the complete file path
     file_path = os.path.join(directory, filename)
 
-    # Create the file
-    if not os.path.exists(file_path):
-        with open(file_path, 'w') as file:
-            file.write('')
-    data_list=[]
+    scores=[]
 
     for i in range(1, run_number+1):
 
-        frame = 0
-        score = 0
-        obs_old, info = env.reset()
+        obs_old, _ = env.reset()
         done = False
 
-        while not done :
+        score=0
 
-            # We can visually render the learning environment. We disable it for performance.
-            env.render()
+        while not done :
 
             # We request an action from the agent.
             act = agt.choose(obs_old, train = True)[0]
 
             # We apply the action on the environment.
-            obs_new, rwd, done, truncated, _ = env.step(act)
+            obs_new, rwd, done, _ , _ = env.step(act)
+
+            score+=rwd
 
             # We store the data
             data = (obs_old, act, rwd, obs_new)
 
             # We add the needed data to our file :
-            data_list.append(data)
+            with open(file_path, 'ab+') as file:
+                pickle.dump(data, file)
+
             # Update latest observation
             obs_old = obs_new
 
-    with open(file_path, 'wb') as file:
-        pickle.dump(data_list, file)
+        scores.append(score)
 
     env.close()
-    print("training done")
+    avg_score = round(np.array(scores).mean(),2)
+    print(f"Training done with average score of {avg_score} on {run_number} parties.")
+
     return None
