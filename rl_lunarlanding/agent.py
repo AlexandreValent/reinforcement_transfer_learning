@@ -38,6 +38,8 @@ class RandomAgent(Agent):
     """
     A random playing agent class.
     """
+    def __init__(self,name):
+        super().__init__ (name)
 
     def learn(self, obs_old, act, rwd, obs_new):
         """
@@ -49,7 +51,7 @@ class RandomAgent(Agent):
         """
         Simply return a random action.
         """
-        return sample(CFG.act_space,1)
+        return sample(CFG.act_space,1)[0]
 
 
 class DQNAgent(Agent):
@@ -57,7 +59,8 @@ class DQNAgent(Agent):
     A basic pytorch Deep Q-learning agent.
     """
 
-    def __init__(self):
+    def __init__(self,name):
+        super().__init__ (name)
         self.net = network.DQN()
         self.opt = torch.optim.Adam(self.net.parameters(), lr = CFG.lr)
 
@@ -68,11 +71,11 @@ class DQNAgent(Agent):
         obs_new = torch.tensor(obs_new)
 
         # We choose the network output
-        out = self.net(torch.tensor(obs_old))[act]
+        out = self.net.forward(torch.tensor(obs_old))[act]
 
         # We compute the target
         with torch.no_grad():
-            exp = rwd + CFG.gamma * self.net(obs_new).max()
+            exp = rwd + CFG.gamma * self.net.forward(obs_new).max()
 
         # Compute the loss
         loss = torch.square(exp - out)
@@ -89,11 +92,11 @@ class DQNAgent(Agent):
         """
         # Return random action with probability epsilon
         if train and random.uniform(0, 1) < CFG.epsilon:
-            return CFG.act_space.sample()
+            return sample(CFG.act_space,1)[0]
 
         # Else, return action with highest value
         with torch.no_grad():
             # choose the values of all possible actions
-            val = self.net(torch.tensor(obs_new))
+            val = self.net.forward(torch.tensor(obs_new))
             # Choose the highest-values action
             return torch.argmax(val).numpy()

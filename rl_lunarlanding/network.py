@@ -32,3 +32,6 @@ class DQN(torch.nn.Module):
             torch.nn.Linear(16, CFG.y_dim),
             torch.nn.ReLU(inplace=True),
         )
+
+    def forward(self, obs):
+        return self.net(obs)

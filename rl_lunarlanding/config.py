@@ -25,6 +25,7 @@ class Configuration:
         self.epsilon = 0.1
 
         self.lr = 0.0001
+        self.gamma = 0.98
 
     # def init(self, agt_type, **kwargs):
     #     """
