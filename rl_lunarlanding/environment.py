@@ -50,6 +50,9 @@ class Planet:
 
 
 
+
+
+
 def get_metrics():
     #We update our information
     frame += 1
@@ -67,3 +70,10 @@ def get_metrics():
     # We add the macro data to a Df
     data_for_df = [agent_type,game_over,time,score_reward]
     df = pd.DataFrame(data_for_df,columns=['Agent','Game Over','Time','Score'])
+
+
+
+if __name__ == "__main__" :
+    environnement = Planet()
+    terre = environnement.select_planet('Terre')
+    print(terre)
