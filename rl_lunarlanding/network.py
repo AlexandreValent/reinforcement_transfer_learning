@@ -20,16 +20,13 @@ class DQN(torch.nn.Module):
 
         self.net = torch.nn.Sequential(
 
-            torch.nn.Linear(CFG.x_dim, 32),
+            torch.nn.Linear(CFG.x_dim, 16),
             torch.nn.ReLU(inplace=True),
 
-            torch.nn.Linear(32, 32),
+            torch.nn.Linear(16, 8),
             torch.nn.ReLU(inplace=True),
 
-            torch.nn.Linear(32, 16),
-            torch.nn.ReLU(inplace=True),
-
-            torch.nn.Linear(16, CFG.y_dim),
+            torch.nn.Linear(8, CFG.y_dim),
             torch.nn.ReLU(inplace=True),
         )
 

@@ -17,6 +17,7 @@ def get_train_data(env, agt, run_number):
 
     scores=[]
 
+    print(f"Start to get data with {agt.name}.")
     for i in range(1, run_number+1):
 
         obs_old, _ = env.reset()
@@ -44,11 +45,14 @@ def get_train_data(env, agt, run_number):
             # Update latest observation
             obs_old = obs_new
 
+        if i % 50 == 0:
+            print(f"⌛ Party {i}/{run_number} done.")
+
         scores.append(score)
 
     env.close()
     avg_score = round(np.array(scores).mean(),2)
-    print(f"Training done with average score of {avg_score} on {run_number} parties.")
+    print(f"✅ Get data done with average score of {avg_score} on {run_number} parties.")
 
     return None
 
@@ -72,14 +76,19 @@ def lean_from_pickle(file_name, agt):
     random.shuffle(data)
 
     # Training our agent
-    for obs in data:
+    print(f"Start to train {agt.name}.")
+    for i, obs in enumerate(data):
         obs_old, act, rwd, obs_new = obs
         agt.learn(obs_old, act, rwd, obs_new)
-    print(f"{agt.name} have learn from pickle.")
+
+        if i % 50000 == 0:
+            print(f"⌛ Passing observation {i}/{len(data)}.")
+
+    print(f"✅ {agt.name} have learn from pickle.")
 
     old_gen = re.search(r"\d+$", agt.name).group()
     new_agent_name = agt.name.replace(old_gen, str(int(old_gen)+1))
 
     torch.save(agt.net.state_dict(),f"saved_agents/{new_agent_name}.pth")
-    print(f"{new_agent_name} saved.")
+    print(f"💾 {new_agent_name} saved.")
     return
