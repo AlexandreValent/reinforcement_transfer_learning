@@ -21,16 +21,16 @@ class DQN1(torch.nn.Module):
 
         self.net = torch.nn.Sequential(
 
-            torch.nn.Linear(CFG.x_dim, 16),
+            torch.nn.Linear(CFG.x_dim, 64),
             torch.nn.ReLU(inplace=True),
 
-            torch.nn.Linear(16, 16),
+            torch.nn.Linear(64, 64),
             torch.nn.ReLU(inplace=True),
 
-            torch.nn.Linear(16, 8),
+            torch.nn.Linear(64, 32),
             torch.nn.ReLU(inplace=True),
 
-            torch.nn.Linear(8, CFG.y_dim)
+            torch.nn.Linear(32, CFG.y_dim)
         )
 
     def forward(self, obs):

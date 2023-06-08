@@ -12,12 +12,15 @@ class Configuration:
 
         self.act_space = [0,1,2,3]
 
-        self.epsilon = 0.25
+        self.epsilon = 1
+        self.decrease_eps = 0.995
 
-        self.lr = 0.005
-        self.gamma = 0.8
+        self.lr = 0.00001
+        self.decrease_lr = 0.99
 
-        self.nb_obs_init = 50_000
-        self.nb_obs_run = 50_000
+        self.gamma = 0.98
+
+        self.nb_obs_init = 10_000
+        self.nb_obs_run = 500
 
 CFG = Configuration()

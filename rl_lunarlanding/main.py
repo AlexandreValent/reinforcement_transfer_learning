@@ -31,10 +31,11 @@ def get_train_data(env, agt, obs_number):
         done = False
         score=0
         frame = 0
+        while not done and frame < 1500:
 
-        while not done or frame > 500:
+        # while not done and obs < obs_number :
             # We request an action from the agent.
-            act = agt.choose(obs_old, train = True)
+            act = agt.choose(obs_old)
 
             # We apply the action on the environment.
             obs_new, rwd, done, _ , _ = env.step(act)
@@ -57,6 +58,7 @@ def get_train_data(env, agt, obs_number):
             if obs % 10_000 == 0:
                 print(f"Obs {obs}/{obs_number} done.")
 
+        # print(f"{parties} party done.")
         scores.append(score)
         parties += 1
 
@@ -96,6 +98,11 @@ def lean_from_pickle(agt):
     return
 
 def auto_generation_from_random(env,agent_G,nb_gen):
+    directory = 'training_data/'
+    filename = 'temp.pickle'
+    file_path = os.path.join(directory, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
 
     print("🚀 Strating with generation 0")
     # Get random data
@@ -125,12 +132,17 @@ def auto_generation_from_random(env,agent_G,nb_gen):
 
         print("\n =================================== \n")
 
+        # decrease eps an lr
+        CFG.lr = CFG.lr * CFG.decrease_lr
+        CFG.epsilon = CFG.epsilon * CFG.decrease_lr
+
     print("🌚 Ready to land !")
 
     print("\n =================================== \n")
     return
 
 def evaluate(env,agt,run_number):
+    agt.train = False
     for party in range(1, run_number+1):
         frame = 0
         scores=[]
@@ -142,9 +154,9 @@ def evaluate(env,agt,run_number):
             # We can visually render the learning environment. We disable it for performance.
             env.render()
             # We request an action from the agent.
-            act = agt.choose(obs_old, train = True)
+            act = agt.choose(obs_old)
             # We apply the action on the environment.
-            obs_new, rwd, done, truncated, _ = env.step(act)
+            obs_new, rwd, done, _, _ = env.step(act)
             # Update latest observation
             obs_old = obs_new
             #We calculate the metrics needed

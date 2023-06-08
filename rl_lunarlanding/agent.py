@@ -48,11 +48,12 @@ class RandomAgent(Agent):
         """
         return
 
-    def choose(self, obs_new,train):
+    def choose(self, obs_new):
         """
         Simply return a random action.
         """
-        return sample(CFG.act_space,1)[0]
+        act = sample(CFG.act_space,1)[0]
+        return act
 
 
 class DQNAgent(Agent):
@@ -64,6 +65,7 @@ class DQNAgent(Agent):
         super().__init__ (name)
         self.net = DQN
         self.opt = torch.optim.Adam(self.net.parameters(), lr = CFG.lr)
+        self.train = True
 
     def learn(self, obs_old, act, rwd, obs_new):
         """
@@ -86,18 +88,22 @@ class DQNAgent(Agent):
         loss.sum().backward()
         self.opt.step()
 
-    def choose(self, obs_new, train):
+    def choose(self, obs_new):
         """
         Run an epsilon-greedy policy for next actino selection.
         learn train = True for training purpose. False to choose agent's metric.
         """
         # Return random action with probability epsilon
-        if train and random.uniform(0, 1) < CFG.epsilon:
-            return sample(CFG.act_space,1)[0]
+        if self.train and random.uniform(0, 1) < CFG.epsilon:
+            act = sample(CFG.act_space,1)[0]
+            # print(act)
+            return act
 
         # Else, return action with highest value
         with torch.no_grad():
             # choose the values of all possible actions
             val = self.net.forward(torch.tensor(obs_new))
             # Choose the highest-values action
-            return torch.argmax(val).numpy()
+            act = torch.argmax(val).numpy()
+            # print(act)
+            return act
