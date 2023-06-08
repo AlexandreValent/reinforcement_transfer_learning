@@ -1,4 +1,9 @@
-# import gym
+from rl_lunarlanding import agent, main,network
+import gym
+import torch
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 # env = gym.make(
 #     "LunarLander-v2",
@@ -47,20 +52,34 @@
 #         pass
 # print(data)
 
-""" train """
-from rl_lunarlanding import agent, main
-import gym
-import torch
-import time
+# """ EVALUATE """
 
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# env = gym.make(
+#     "LunarLander-v2",
+#     continuous = False,
+#     gravity = -11.0,
+#     enable_wind = False,
+#     render_mode = 'human'
+#     )
+
+# DQN1_Net = network.DQN1()
+# DQNAgent = agent.DQNAgent('evaluate',DQN1_Net)
+# DQNAgent.net.load_state_dict(torch.load('saved_agents/test_G5.pth'))
+
+# main.evaluate(env,DQNAgent,10)
+
+
+# """ TRAINING TEST """
 
 env = gym.make(
     "LunarLander-v2",
     continuous = False,
     gravity = -5.0,
-    enable_wind = False
+    enable_wind = False,
     )
 
-main.auto_generation_from_random(env,5,"TEST_AUTO")
+DQN2_Net = network.DQN2()
+DQNAgent = agent.DQNAgent('DQN2_test',DQN2_Net)
+
+main.auto_generation_from_random(env = env , agent_G0 = DQNAgent , nb_gen = 5)

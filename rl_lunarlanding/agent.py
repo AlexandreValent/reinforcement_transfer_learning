@@ -20,6 +20,7 @@ class Agent():
 
     def __init__(self,name):
         self.name = name
+        self.gen = 0
 
     def learn(self):
         """
@@ -59,9 +60,9 @@ class DQNAgent(Agent):
     A basic pytorch Deep Q-learning agent.
     """
 
-    def __init__(self,name):
+    def __init__(self,name,DQN):
         super().__init__ (name)
-        self.net = network.DQN()
+        self.net = DQN
         self.opt = torch.optim.Adam(self.net.parameters(), lr = CFG.lr)
 
     def learn(self, obs_old, act, rwd, obs_new):

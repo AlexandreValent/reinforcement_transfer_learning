@@ -22,10 +22,13 @@ class Configuration:
 
         self.act_space = [0,1,2,3]
 
-        self.epsilon = 0.1
+        self.epsilon = 0.6
 
-        self.lr = 0.0001
+        self.lr = 0.001
         self.gamma = 0.98
+
+        self.nb_obs_init = 5_000
+        self.nb_obs_run = 1_000
 
     # def init(self, agt_type, **kwargs):
     #     """

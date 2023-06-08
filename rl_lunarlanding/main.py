@@ -4,25 +4,27 @@ import numpy as np
 import random
 import torch
 import re
-from rl_lunarlanding import agent
+from rl_lunarlanding import agent, network
+from rl_lunarlanding.config import CFG
 
 # Silent warning
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-def get_train_data(env, agt, run_number):
+def get_train_data(env, agt, obs_number):
     """
     Get data for training with a specified agent.
     """
     #Initialisation du fichier pickle
     directory = 'training_data/'
-    filename = f'{agt.name}.pickle' #PENSER A ADD
+    filename = 'temp.pickle'
     file_path = os.path.join(directory, filename)  # Combine the directory and filename to create the complete file path
 
     scores=[]
+    obs = 0
 
     print(f"👀 Start to get data with {agt.name}.")
-    for i in range(1, run_number+1):
+    while obs < obs_number:
 
         obs_old, _ = env.reset()
         done = False
@@ -49,21 +51,24 @@ def get_train_data(env, agt, run_number):
             # Update latest observation
             obs_old = obs_new
 
-        if i % 50 == 0:
-            print(f"Party {i}/{run_number} done.")
+            # Adding one more obs
+            obs += 1
+
+            if obs % 10_000 == 0:
+                print(f"Obs {obs}/{obs_number} done.")
 
         scores.append(score)
 
     avg_score = round(np.array(scores).mean(),2)
-    print(f"✅ Get data done with average score of {avg_score} on {run_number} parties.")
+    print(f"✅ Get data done with average score of {avg_score} on {obs_number} obesrvations.")
     print("\n =================================== \n")
 
     return
 
-def lean_from_pickle(file_name, agt):
+def lean_from_pickle(agt):
     #Initialisation du fichier pickle
     directory = 'training_data/'
-    filename = file_name
+    filename = 'temp.pickle'
     file_path = os.path.join(directory, filename)  # Combine the directory and filename to create the complete file path
 
     # Extract data from pickle
@@ -88,30 +93,63 @@ def lean_from_pickle(file_name, agt):
             print(f"Passing observation {i}/{len(data)}.")
 
     print(f"✅ {agt.name} have learn from pickle.")
+    return
 
-    old_gen = re.search(r"\d+$", agt.name).group()
-    new_agent_name = agt.name.replace(old_gen, str(int(old_gen)+1))
+def auto_generation_from_random(env,agent_G0,nb_gen):
 
-    torch.save(agt.net.state_dict(),f"saved_agents/{new_agent_name}.pth")
-    print(f"💾 {new_agent_name} saved.")
+    print("🚀 Strating with generation 0")
+    # Get random data
+    random_agent = agent.RandomAgent('random')
+    get_train_data(env,random_agent,CFG.nb_obs_init)
+    # Train G0
+    lean_from_pickle(agent_G0)
+
+    # Save G0
+    os.remove("training_data/temp.pickle")
+    torch.save(agent_G0.net.state_dict(),f"saved_agents/{agent_G0.name}_G{agent_G0.gen}.pth")
+    print(f"💾 {agent_G0.name} saved and pickel data deleted.")
+
+    for i in range (1,nb_gen):
+        print(f"🧬 Doing generation {i}")
+
+        get_train_data(env,agent_G0,CFG.nb_obs_run)
+        lean_from_pickle(agent_G0)
+
+        # Save new agent and delete pickel
+        os.remove("training_data/temp.pickle")
+        agent_G0.gen += 1
+        torch.save(agent_G0.net.state_dict(),f"saved_agents/{agent_G0.name}_G{agent_G0.gen}.pth")
+        print(f"💾 {agent_G0.name}_G{agent_G0.gen} saved and pickel data deleted.")
+
+        print("\n =================================== \n")
+
+    print("🌚 Ready to land !")
 
     print("\n =================================== \n")
     return
 
-def auto_generation_from_random(env,nb_gen,name):
+def evaluate(env,agt,run_number):
+    for party in range(1, run_number+1):
+        frame = 0
+        scores=[]
+        score = 0
+        obs_old, info = env.reset()
+        done = False
 
-    random_agent = agent.RandomAgent(f'random_{name}')
-    get_train_data(env,random_agent,100)
+        while not done :
+            # We can visually render the learning environment. We disable it for performance.
+            env.render()
+            # We request an action from the agent.
+            act = agt.choose(obs_old, train = True)
+            # We apply the action on the environment.
+            obs_new, rwd, done, truncated, _ = env.step(act)
+            # Update latest observation
+            obs_old = obs_new
+            #We calculate the metrics needed
+            frame += 1
+            score += rwd
+            scores.append(score)
+        #print(f"Score = {score}")
 
-    DQNAgent_G0 = agent.DQNAgent(f'{name}_G0')
-    lean_from_pickle(f'random_{name}.pickle', DQNAgent_G0)
-
-    for i in range (1,nb_gen):
-        print(f"Doing generation {i}")
-        DQNAgent = agent.DQNAgent(f'{name}_G{i}')
-        DQNAgent.net.load_state_dict(torch.load(f'saved_agents/{name}_G{i}.pth'))
-
-        get_train_data(env,DQNAgent,500)
-        lean_from_pickle(f"{name}_G{i}.pickle", DQNAgent)
-
+    print(f"SCORE MEAN = {np.array(scores).mean()}")
     return
