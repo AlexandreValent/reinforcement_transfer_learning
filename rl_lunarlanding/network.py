@@ -24,6 +24,9 @@ class DQN1(torch.nn.Module):
             torch.nn.Linear(CFG.x_dim, 16),
             torch.nn.ReLU(inplace=True),
 
+            torch.nn.Linear(16, 16),
+            torch.nn.ReLU(inplace=True),
+
             torch.nn.Linear(16, 8),
             torch.nn.ReLU(inplace=True),
 

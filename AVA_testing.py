@@ -70,8 +70,14 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 # main.evaluate(env,DQNAgent,10)
 
 
-# """ TRAINING TEST """
+DQN1_Net = network.DQN1()
+DQNAgent = agent.DQNAgent('DQN1_test',DQN1_Net)
 
+
+# DQN2_Net = network.DQN2()
+# DQNAgent = agent.DQNAgent('DQN2_test',DQN2_Net)
+
+""" TRAINING TEST """
 env = gym.make(
     "LunarLander-v2",
     continuous = False,
@@ -79,7 +85,16 @@ env = gym.make(
     enable_wind = False,
     )
 
-DQN2_Net = network.DQN2()
-DQNAgent = agent.DQNAgent('DQN2_test',DQN2_Net)
-
 main.auto_generation_from_random(env = env , agent_G0 = DQNAgent , nb_gen = 5)
+
+""" EVALUATE """
+# env = gym.make(
+#     "LunarLander-v2",
+#     continuous = False,
+#     gravity = -5.0,
+#     enable_wind = False,
+#     render_mode = "human"
+#     )
+
+# DQNAgent.net.load_state_dict(torch.load('saved_agents/DQN1_test_G4.pth'))
+# main.evaluate(env,DQNAgent,10)

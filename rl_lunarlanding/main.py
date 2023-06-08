@@ -22,8 +22,9 @@ def get_train_data(env, agt, obs_number):
 
     scores=[]
     obs = 0
+    parties = 0
 
-    print(f"👀 Start to get data with {agt.name}.")
+    print(f"👀 Start to get data with {agt.name}_G{agt.gen}.")
     while obs < obs_number:
 
         obs_old, _ = env.reset()
@@ -58,10 +59,10 @@ def get_train_data(env, agt, obs_number):
                 print(f"Obs {obs}/{obs_number} done.")
 
         scores.append(score)
+        parties += 1
 
     avg_score = round(np.array(scores).mean(),2)
-    print(f"✅ Get data done with average score of {avg_score} on {obs_number} obesrvations.")
-    print("\n =================================== \n")
+    print(f"✅ Get data done with average score of {avg_score} on {parties} parties.\n")
 
     return
 
@@ -84,7 +85,7 @@ def lean_from_pickle(agt):
     random.shuffle(data)
 
     # Training our agent
-    print(f"👀 Start to train {agt.name}.")
+    print(f"📖 Start to train {agt.name}_G{agt.gen}.")
     for i, obs in enumerate(data):
         obs_old, act, rwd, obs_new = obs
         agt.learn(obs_old, act, rwd, obs_new)
@@ -92,7 +93,7 @@ def lean_from_pickle(agt):
         if i % 5000 == 0:
             print(f"Passing observation {i}/{len(data)}.")
 
-    print(f"✅ {agt.name} have learn from pickle.")
+    print(f"✅ {agt.name}_G{agt.gen} have learn from pickle and became {agt.name}_G{agt.gen+1}.")
     return
 
 def auto_generation_from_random(env,agent_G0,nb_gen):
@@ -107,7 +108,9 @@ def auto_generation_from_random(env,agent_G0,nb_gen):
     # Save G0
     os.remove("training_data/temp.pickle")
     torch.save(agent_G0.net.state_dict(),f"saved_agents/{agent_G0.name}_G{agent_G0.gen}.pth")
-    print(f"💾 {agent_G0.name} saved and pickel data deleted.")
+    print(f"💾 {agent_G0.name}_G{agent_G0.gen} saved and pickel data deleted.")
+
+    print("\n =================================== \n")
 
     for i in range (1,nb_gen):
         print(f"🧬 Doing generation {i}")
