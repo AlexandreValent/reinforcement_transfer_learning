@@ -29,17 +29,15 @@ def get_train_data(env, agt, obs_number):
 
         obs_old, _ = env.reset()
         done = False
-
         score=0
+        frame = 0
 
-        while not done :
-
+        while not done or frame > 500:
             # We request an action from the agent.
             act = agt.choose(obs_old, train = True)
 
             # We apply the action on the environment.
             obs_new, rwd, done, _ , _ = env.step(act)
-
             score+=rwd
 
             # We store the data
@@ -52,8 +50,9 @@ def get_train_data(env, agt, obs_number):
             # Update latest observation
             obs_old = obs_new
 
-            # Adding one more obs
+            # Adding one more obs and frame
             obs += 1
+            frame +=1
 
             if obs % 10_000 == 0:
                 print(f"Obs {obs}/{obs_number} done.")
@@ -96,33 +95,33 @@ def lean_from_pickle(agt):
     print(f"✅ {agt.name}_G{agt.gen} have learn from pickle and became {agt.name}_G{agt.gen+1}.")
     return
 
-def auto_generation_from_random(env,agent_G0,nb_gen):
+def auto_generation_from_random(env,agent_G,nb_gen):
 
     print("🚀 Strating with generation 0")
     # Get random data
     random_agent = agent.RandomAgent('random')
     get_train_data(env,random_agent,CFG.nb_obs_init)
     # Train G0
-    lean_from_pickle(agent_G0)
+    lean_from_pickle(agent_G)
 
     # Save G0
     os.remove("training_data/temp.pickle")
-    torch.save(agent_G0.net.state_dict(),f"saved_agents/{agent_G0.name}_G{agent_G0.gen}.pth")
-    print(f"💾 {agent_G0.name}_G{agent_G0.gen} saved and pickel data deleted.")
+    torch.save(agent_G.net.state_dict(),f"saved_agents/{agent_G.name}_G{agent_G.gen}.pth")
+    print(f"💾 {agent_G.name}_G{agent_G.gen} saved and pickel data deleted.")
 
     print("\n =================================== \n")
 
     for i in range (1,nb_gen):
         print(f"🧬 Doing generation {i}")
 
-        get_train_data(env,agent_G0,CFG.nb_obs_run)
-        lean_from_pickle(agent_G0)
+        get_train_data(env,agent_G,CFG.nb_obs_run)
+        lean_from_pickle(agent_G)
 
         # Save new agent and delete pickel
         os.remove("training_data/temp.pickle")
-        agent_G0.gen += 1
-        torch.save(agent_G0.net.state_dict(),f"saved_agents/{agent_G0.name}_G{agent_G0.gen}.pth")
-        print(f"💾 {agent_G0.name}_G{agent_G0.gen} saved and pickel data deleted.")
+        agent_G.gen += 1
+        torch.save(agent_G.net.state_dict(),f"saved_agents/{agent_G.name}_G{agent_G.gen}.pth")
+        print(f"💾 {agent_G.name}_G{agent_G.gen} saved and pickel data deleted.")
 
         print("\n =================================== \n")
 

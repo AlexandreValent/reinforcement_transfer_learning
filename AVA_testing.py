@@ -85,7 +85,7 @@ env = gym.make(
     enable_wind = False,
     )
 
-main.auto_generation_from_random(env = env , agent_G0 = DQNAgent , nb_gen = 5)
+main.auto_generation_from_random(env = env , agent_G = DQNAgent , nb_gen = 20)
 
 """ EVALUATE """
 # env = gym.make(
