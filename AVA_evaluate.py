@@ -20,7 +20,7 @@ env = gym.make(
     render_mode = "human"
     )
 
-DQNAgent.net.load_state_dict(torch.load('saved_agents/DQN1_test_G1619.pth'))
+DQNAgent.net.load_state_dict(torch.load('local_saved_agents/DQN1_test_G1700.pth'))
 main.evaluate(env,DQNAgent,3)
 
 # main.evaluate(env,RandomAgent,3)

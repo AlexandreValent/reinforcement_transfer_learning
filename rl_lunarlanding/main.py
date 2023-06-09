@@ -6,17 +6,14 @@ import torch
 import re
 from rl_lunarlanding import agent, network
 from rl_lunarlanding.config import CFG
-
-# Silent warning
-import warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+import shutil
 
 def get_train_data(env, agt, obs_number):
     """
     Get data for training with a specified agent.
     """
     #Initialisation du fichier pickle
-    directory = 'training_data/'
+    directory = 'local_training_data/'
     filename = 'temp.pickle'
     file_path = os.path.join(directory, filename)  # Combine the directory and filename to create the complete file path
     if os.path.exists(file_path): # delete pickle if exist
@@ -25,6 +22,8 @@ def get_train_data(env, agt, obs_number):
     scores=[]
     obs = 0
     parties = 0
+
+    agt.train = True
 
     print(f"👀 Start to get data with {agt.name}_G{agt.gen}.")
     while obs < obs_number:
@@ -66,7 +65,7 @@ def get_train_data(env, agt, obs_number):
 
 def lean_from_pickle(agt):
     #Initialisation du fichier pickle
-    directory = 'training_data/'
+    directory = 'local_training_data/'
     filename = 'temp.pickle'
     file_path = os.path.join(directory, filename)  # Combine the directory and filename to create the complete file path
 
@@ -95,30 +94,39 @@ def lean_from_pickle(agt):
     return
 
 def auto_generation_from_random(env,agent_G,nb_gen):
-    print("🚀 Strating with generation 0")
-    # Get random data
-    random_agent = agent.RandomAgent('random')
-    get_train_data(env,random_agent,CFG.nb_obs_init)
-    # Train G0
-    lean_from_pickle(agent_G)
+    # Get initial gen to deal with continue_auto_gen
+    int_gen = agent_G.gen
 
-    # Save G0
-    os.remove("training_data/temp.pickle")
-    torch.save(agent_G.net.state_dict(),f"saved_agents/{agent_G.name}_G{agent_G.gen}.pth")
-    print(f"💾 {agent_G.name}_G{agent_G.gen} saved and pickel data deleted.")
+    # Dealing with directory and path for saving agent
+    saving_path = f"local_saved_agents/{agent_G.name}"
+    if not os.path.exists(saving_path):
+        os.makedirs(saving_path)
 
-    print("\n =================================== \n")
+    if int_gen == 0:
+        print("🚀 Strating with generation 0")
+        # Get random data
+        random_agent = agent.RandomAgent('random')
+        get_train_data(env,random_agent,CFG.nb_obs_init)
+        # Train G0
+        lean_from_pickle(agent_G)
 
-    for i in range (1,nb_gen):
+        # Save G0
+        os.remove("local_training_data/temp.pickle")
+        torch.save(agent_G.net.state_dict(),f"{saving_path}/{agent_G.name}_G{agent_G.gen}.pth")
+        print(f"💾 {agent_G.name}_G{agent_G.gen} saved and pickel data deleted.")
+
+        print("\n =================================== \n")
+
+    for i in range (int_gen, int_gen + nb_gen):
         print(f"🧬 Doing generation {i} with eps = {round(CFG.epsilon,3)} & lr ={CFG.lr}\n")
 
         get_train_data(env,agent_G,CFG.nb_obs_run)
         lean_from_pickle(agent_G)
 
         # Save new agent and delete pickel
-        os.remove("training_data/temp.pickle")
+        os.remove("local_training_data/temp.pickle")
         agent_G.gen += 1
-        torch.save(agent_G.net.state_dict(),f"saved_agents/{agent_G.name}_G{agent_G.gen}.pth")
+        torch.save(agent_G.net.state_dict(),f"{saving_path}/{agent_G.name}_G{agent_G.gen}.pth")
         print(f"💾 {agent_G.name}_G{agent_G.gen} saved and pickel data deleted.")
 
         print("\n =================================== \n")
@@ -131,6 +139,31 @@ def auto_generation_from_random(env,agent_G,nb_gen):
 
     print("\n =================================== \n")
     return
+
+def continue_auto_gen(env,path,nb_gen):
+    """ Used to continue trainging with a specific agent (only working with network.DQN1)
+    """
+
+    print("⌛ Starting to restore agent")
+    # Get info from path
+    name = re.search(r"([^/]+)(?=_G)", path[:-4]).group()
+    gen = int(re.search(r"\d+$", path[:-4]).group())
+
+
+    # Get last gen to calculate eps and lr
+    CFG.lr = CFG.lr * CFG.decrease_lr**gen
+    CFG.epsilon = CFG.epsilon * CFG.decrease_lr**gen
+
+    # Instanciate and load agent
+    DQN1_Net = network.DQN1()
+    DQNAgent = agent.DQNAgent(name,DQN1_Net)
+    DQNAgent.net.load_state_dict(torch.load(path))
+    DQNAgent.gen = gen
+
+    print("✅ Agent fully restore")
+    print("\n =================================== \n")
+    return auto_generation_from_random(env,DQNAgent,nb_gen)
+
 
 def evaluate(env,agt,run_number):
     agt.train = False
@@ -161,3 +194,23 @@ def evaluate(env,agt,run_number):
         else :
             print(f"✅ Run {party} : Lander has landed with a score of {score}")
     return
+
+
+def sampling_agent(agent_name,rate):
+    print("⌛ Trying to sample agents for storage on GH.")
+
+    saving_path = f"saved_agents/{agent_name}"
+    if not os.path.exists(saving_path):
+        os.makedirs(saving_path)
+
+    try:
+        i = 0
+        while True :
+            shutil.copy(f"local_saved_agents/{agent_name}/{agent_name}_G{i*rate}.pth", f"saved_agents/{agent_name}")
+            i += 1
+    except:
+        if i == 0:
+            print("❌ Unable to save a sampling of your agent.")
+        else :
+            print(f"✅ Saving a sampling of {i} agents.")
+        return
