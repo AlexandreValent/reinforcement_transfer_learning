@@ -172,6 +172,7 @@ def evaluate(env,agt,run_number):
         score = 0
         obs_old, info = env.reset()
         done = False
+        out_of_x = False
 
         while not done :
             # We can visually render the learning environment. We disable it for performance.
@@ -180,6 +181,8 @@ def evaluate(env,agt,run_number):
             act = agt.choose(obs_old)
             # We apply the action on the environment.
             obs_new, rwd, terminated , truncated , _ = env.step(act)
+            if abs(obs_new[0]) > 1:
+                out_of_x = True
             done = terminated or truncated
             # Update latest observation
             obs_old = obs_new
@@ -188,7 +191,9 @@ def evaluate(env,agt,run_number):
             scores.append(score)
 
         if env.game_over :
-            print(f"❌ Run {party} : Lander crashed or go outside the sceen with a score of {score}")
+            print(f"❌ Run {party} : Lander crash with a score of {score}")
+        elif out_of_x :
+            print(f"❌ Run {party} : Lander go outside the sceen with a score of {score}")
         elif truncated:
             print(f"❌ Run {party} : Run has been truncate with a score of {score}")
         else :
