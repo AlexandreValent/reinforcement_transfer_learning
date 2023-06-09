@@ -20,7 +20,7 @@ class Configuration:
 
         self.gamma = 0.98
 
-        self.nb_obs_init = 100_000
+        self.nb_obs_init = 10_000
         self.nb_obs_run = 2500
 
 CFG = Configuration()

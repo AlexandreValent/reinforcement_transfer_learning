@@ -15,12 +15,12 @@ RandomAgent = agent.RandomAgent('random_test')
 env = gym.make(
     "LunarLander-v2",
     continuous = False,
-    gravity = -5.0,
+    gravity = -7,
     enable_wind = False,
     render_mode = "human"
     )
 
-DQNAgent.net.load_state_dict(torch.load('saved_agents/DQN1_test_G273.pth'))
+DQNAgent.net.load_state_dict(torch.load('saved_agents/DQN1_test_G1619.pth'))
 main.evaluate(env,DQNAgent,3)
 
 # main.evaluate(env,RandomAgent,3)

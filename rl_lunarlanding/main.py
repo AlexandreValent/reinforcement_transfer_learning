@@ -19,6 +19,8 @@ def get_train_data(env, agt, obs_number):
     directory = 'training_data/'
     filename = 'temp.pickle'
     file_path = os.path.join(directory, filename)  # Combine the directory and filename to create the complete file path
+    if os.path.exists(file_path): # delete pickle if exist
+        os.remove(file_path)
 
     scores=[]
     obs = 0
@@ -33,10 +35,13 @@ def get_train_data(env, agt, obs_number):
 
         while not done:
             act = agt.choose(obs_old) # We request an action from the agent.
-            obs_new, rwd, done, _ , _ = env.step(act)  # We apply the action on the environment.
+            obs_new, rwd, terminated, truncated , _ = env.step(act)  # We apply the action on the environment.
+            done = terminated or truncated
 
-            if frame > 10000 :
-                print(obs_new, rwd, done)
+            if frame > 10_000 : # Auto reload if infinite loop in env
+                print("❌ Env is crashing, reload required")
+                env.reset()
+                return get_train_data(env, agt, obs_number)
 
             score+=rwd
             data = (obs_old, act, rwd, obs_new)
@@ -55,7 +60,7 @@ def get_train_data(env, agt, obs_number):
         parties += 1
 
     avg_score = round(np.array(scores).mean(),2)
-    print(f"✅ Get data done with average score of {round(avg_score,3)} on {round(parties,3)} parties.\n")
+    print(f"✅ Get data done with average score of {round(avg_score,3)} on {parties} parties.\n")
 
     return
 
@@ -90,12 +95,6 @@ def lean_from_pickle(agt):
     return
 
 def auto_generation_from_random(env,agent_G,nb_gen):
-    directory = 'training_data/'
-    filename = 'temp.pickle'
-    file_path = os.path.join(directory, filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-
     print("🚀 Strating with generation 0")
     # Get random data
     random_agent = agent.RandomAgent('random')
@@ -111,7 +110,7 @@ def auto_generation_from_random(env,agent_G,nb_gen):
     print("\n =================================== \n")
 
     for i in range (1,nb_gen):
-        print(f"🧬 Doing generation {i} with eps = {CFG.epsilon} & lr ={CFG.lr}\n")
+        print(f"🧬 Doing generation {i} with eps = {round(CFG.epsilon,3)} & lr ={CFG.lr}\n")
 
         get_train_data(env,agent_G,CFG.nb_obs_run)
         lean_from_pickle(agent_G)
@@ -136,7 +135,6 @@ def auto_generation_from_random(env,agent_G,nb_gen):
 def evaluate(env,agt,run_number):
     agt.train = False
     for party in range(1, run_number+1):
-        frame = 0
         scores=[]
         score = 0
         obs_old, info = env.reset()
@@ -148,14 +146,18 @@ def evaluate(env,agt,run_number):
             # We request an action from the agent.
             act = agt.choose(obs_old)
             # We apply the action on the environment.
-            obs_new, rwd, done, _, _ = env.step(act)
+            obs_new, rwd, terminated , truncated , _ = env.step(act)
+            done = terminated or truncated
             # Update latest observation
             obs_old = obs_new
             #We calculate the metrics needed
-            frame += 1
             score += rwd
             scores.append(score)
-        #print(f"Score = {score}")
 
-    print(f"SCORE MEAN = {np.array(scores).mean()}")
+        if env.game_over :
+            print(f"❌ Run {party} : Lander crashed or go outside the sceen with a score of {score}")
+        elif truncated:
+            print(f"❌ Run {party} : Run has been truncate with a score of {score}")
+        else :
+            print(f"✅ Run {party} : Lander has landed with a score of {score}")
     return

@@ -14,7 +14,7 @@ DQNAgent = agent.DQNAgent('DQN1_test',DQN1_Net)
 env = gym.make(
     "LunarLander-v2",
     continuous = False,
-    gravity = -7.0,
+    gravity = -7.0, #7
     enable_wind = False,
     )
 
