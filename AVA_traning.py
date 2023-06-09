@@ -18,4 +18,4 @@ env = gym.make(
     enable_wind = False,
     )
 
-main.auto_generation_from_random(env = env , agent_G = DQNAgent , nb_gen = 500)
+main.auto_generation_from_random(env = env , agent_G = DQNAgent , nb_gen = 2500)

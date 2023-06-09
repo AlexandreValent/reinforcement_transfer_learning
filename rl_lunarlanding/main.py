@@ -26,44 +26,36 @@ def get_train_data(env, agt, obs_number):
 
     print(f"👀 Start to get data with {agt.name}_G{agt.gen}.")
     while obs < obs_number:
-
         obs_old, _ = env.reset()
         done = False
         score=0
         frame = 0
-        while not done and frame < 1500:
 
-        # while not done and obs < obs_number :
-            # We request an action from the agent.
-            act = agt.choose(obs_old)
+        while not done:
+            act = agt.choose(obs_old) # We request an action from the agent.
+            obs_new, rwd, done, _ , _ = env.step(act)  # We apply the action on the environment.
 
-            # We apply the action on the environment.
-            obs_new, rwd, done, _ , _ = env.step(act)
+            if frame > 10000 :
+                print(obs_new, rwd, done)
+
             score+=rwd
-
-            # We store the data
             data = (obs_old, act, rwd, obs_new)
 
-            # We add the needed data to our file :
             with open(file_path, 'ab+') as file:
                 pickle.dump(data, file)
 
-            # Update latest observation
             obs_old = obs_new
-
-            # Adding one more obs and frame
             obs += 1
             frame +=1
 
             if obs % 10_000 == 0:
                 print(f"Obs {obs}/{obs_number} done.")
 
-        # print(f"{parties} party done.")
         scores.append(score)
         parties += 1
 
     avg_score = round(np.array(scores).mean(),2)
-    print(f"✅ Get data done with average score of {avg_score} on {parties} parties.\n")
+    print(f"✅ Get data done with average score of {round(avg_score,3)} on {round(parties,3)} parties.\n")
 
     return
 
@@ -119,7 +111,7 @@ def auto_generation_from_random(env,agent_G,nb_gen):
     print("\n =================================== \n")
 
     for i in range (1,nb_gen):
-        print(f"🧬 Doing generation {i}")
+        print(f"🧬 Doing generation {i} with eps = {CFG.epsilon} & lr ={CFG.lr}\n")
 
         get_train_data(env,agent_G,CFG.nb_obs_run)
         lean_from_pickle(agent_G)

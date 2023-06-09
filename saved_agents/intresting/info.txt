@@ -1,9 +1,0 @@
-DQN1_test_G11.pth :
-    vol stationnaire avec DQN 1
-        self.epsilon = 0.2
-
-        self.lr = 0.001
-        self.gamma = 0.8
-
-        self.nb_obs_init = 250_000
-        self.nb_obs_run = 100_000

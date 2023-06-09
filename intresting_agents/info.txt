@@ -1,0 +1,11 @@
+DQN1_test_G1826 : arrive à land mais prend son temps car early stop des parties (1500 frames)
+        self.epsilon = 1
+        self.decrease_eps = 0.995
+
+        self.lr = 0.0001
+        self.decrease_lr = 0.999
+
+        self.gamma = 0.98
+
+        self.nb_obs_init = 100_000
+        self.nb_obs_run = 1000

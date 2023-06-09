@@ -15,12 +15,12 @@ class Configuration:
         self.epsilon = 1
         self.decrease_eps = 0.995
 
-        self.lr = 0.00001
-        self.decrease_lr = 0.99
+        self.lr = 0.0001
+        self.decrease_lr = 0.999
 
         self.gamma = 0.98
 
-        self.nb_obs_init = 10_000
-        self.nb_obs_run = 500
+        self.nb_obs_init = 100_000
+        self.nb_obs_run = 2500
 
 CFG = Configuration()
