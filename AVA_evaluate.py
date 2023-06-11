@@ -5,13 +5,11 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 DQN1_Net = network.DQN1()
-DQNAgent = agent.DQNAgent('DQN_envtest',DQN1_Net)
+DQNAgent = agent.DQNAgent('DQN_moon',DQN1_Net,DQN_target = False)
+DQNAgent.net.load_state_dict(torch.load('local_saved_agents/DQN_tar_moon/DQN_tar_moon_G107.pth'))
+planet = environment.Planet('Moon',human_render=True)
 
-# RandomAgent = agent.RandomAgent('random_test')
-
-planet = environment.Planet('Neptune',human_render=True)
-
-DQNAgent.net.load_state_dict(torch.load('local_saved_agents/DQN1_test/DQN1_test_G1700.pth'))
 main.evaluate(planet.env,DQNAgent,3)
 
-# main.evaluate(moon.env,RandomAgent,3)
+# RandomAgent = agent.RandomAgent('random_test')
+# main.evaluate(planet.env,RandomAgent,3)

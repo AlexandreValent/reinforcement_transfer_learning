@@ -7,6 +7,7 @@ import re
 from rl_lunarlanding import agent, network
 from rl_lunarlanding.config import CFG
 import shutil
+import json
 
 def get_train_data(env, agt, obs_number):
     """
@@ -93,7 +94,7 @@ def lean_from_pickle(agt):
     print(f"✅ {agt.name}_G{agt.gen} have learn from pickle and became {agt.name}_G{agt.gen+1}.")
     return
 
-def auto_generation_from_random(env,agent_G,nb_gen):
+def auto_generation_from_random(planet,agent_G,nb_gen):
     # Get initial gen to deal with continue_auto_gen
     int_gen = agent_G.gen
 
@@ -102,6 +103,23 @@ def auto_generation_from_random(env,agent_G,nb_gen):
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
 
+    # Saving rl info in a json file
+    json_dict = {'epsilon_init' : CFG.epsilon,'decrease_eps' : CFG.decrease_eps,
+                 'lr_init' : CFG.lr,'decrease_lr' : CFG.decrease_lr,
+                 'gamma' : CFG.gamma,
+                 'nb_obs_init' : CFG.nb_obs_init, 'nb_obs_run' : CFG.nb_obs_run,
+                 'training_env' : planet.name
+                 }
+    if not agent_G.net_target:
+        json_dict['DQN_target'] = False
+        json_dict['target_tau'] = False
+    else :
+        json_dict['DQN_target'] = True
+        json_dict['target_tau'] = CFG.tau
+    with open(f'{saving_path}/rl_info.json', 'w') as outfile:
+        json.dump(json_dict, outfile)
+
+    env = planet.env
     if int_gen == 0:
         print("🚀 Strating with generation 0")
         # Get random data
@@ -131,16 +149,17 @@ def auto_generation_from_random(env,agent_G,nb_gen):
 
         print("\n =================================== \n")
 
-        # decrease eps an lr
+        # decrease eps, lr and incremente nb_upd_target
         CFG.lr = CFG.lr * CFG.decrease_lr
-        CFG.epsilon = CFG.epsilon * CFG.decrease_lr
+        CFG.epsilon = CFG.epsilon * CFG.decrease_eps
+        agent_G.nb_upd_target +=1
 
     print("🌚 Ready to land !")
 
     print("\n =================================== \n")
     return
 
-def continue_auto_gen(env,path,nb_gen):
+def continue_auto_gen(env,path,nb_gen,net_target = False):
     """ Used to continue trainging with a specific agent (only working with network.DQN1)
     """
 
@@ -156,14 +175,20 @@ def continue_auto_gen(env,path,nb_gen):
 
     # Instanciate and load agent
     DQN1_Net = network.DQN1()
-    DQNAgent = agent.DQNAgent(name,DQN1_Net)
-    DQNAgent.net.load_state_dict(torch.load(path))
+    if net_target :
+        DQN1_Net_target = network.DQN1()
+        DQNAgent = agent.DQNAgent(name,DQN1_Net,DQN1_Net_target)
+        DQNAgent.net.load_state_dict(torch.load(path))
+        DQNAgent.net_target.load_state_dict(torch.load(path))
+    else :
+        DQNAgent = agent.DQNAgent(name,DQN1_Net)
+        DQNAgent.net.load_state_dict(torch.load(path))
+
     DQNAgent.gen = gen
 
     print("✅ Agent fully restore")
     print("\n =================================== \n")
     return auto_generation_from_random(env,DQNAgent,nb_gen)
-
 
 def evaluate(env,agt,run_number):
     agt.train = False
@@ -199,7 +224,6 @@ def evaluate(env,agt,run_number):
         else :
             print(f"✅ Run {party} : Lander has landed with a score of {score}")
     return
-
 
 def sampling_agent(agent_name,rate):
     print("⌛ Trying to sample agents for storage on GH.")

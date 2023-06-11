@@ -8,6 +8,7 @@ import random
 import torch
 import torch.nn
 from random import sample
+import os
 
 from rl_lunarlanding import network
 from rl_lunarlanding.config import CFG
@@ -61,11 +62,13 @@ class DQNAgent(Agent):
     A basic pytorch Deep Q-learning agent.
     """
 
-    def __init__(self,name,DQN):
+    def __init__(self,name,DQN,DQN_target = False):
         super().__init__ (name)
         self.net = DQN
+        self.net_target = DQN_target
         self.opt = torch.optim.Adam(self.net.parameters(), lr = CFG.lr)
         self.train = True
+        self.nb_upd_target = 0
 
     def learn(self, obs_old, act, rwd, obs_new):
         """
@@ -76,9 +79,21 @@ class DQNAgent(Agent):
         # We choose the network output
         out = self.net.forward(torch.tensor(obs_old))[act]
 
+        # Do we update the DQN_target
+        if self.nb_upd_target % CFG.tau == 0 and self.net_target :
+            torch.save(self.net.state_dict(),"temp.pth")
+            self.net_target.load_state_dict(torch.load("temp.pth"))
+            os.remove("temp.pth")
+            print ("🎯 Succefully load target network")
+            self.nb_upd_target += 1
+
         # We compute the target
-        with torch.no_grad():
-            exp = rwd + CFG.gamma * self.net.forward(obs_new).max()
+        if not self.net_target:
+            with torch.no_grad():
+                exp = rwd + CFG.gamma * self.net.forward(obs_new).max()
+        else :
+            with torch.no_grad():
+                exp = rwd + CFG.gamma * self.net_target.forward(obs_new).max()
 
         # Compute the loss
         loss = torch.square(exp - out)

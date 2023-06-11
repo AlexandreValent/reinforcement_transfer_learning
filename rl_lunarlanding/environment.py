@@ -11,7 +11,7 @@ class Planet:
     turbulence_power 0.0 > turbulence_power or turbulence_power > 2.0
     """
     def __init__(self, planet,human_render):
-        self.planet = planet
+        self.name = planet
         self.human_render = human_render
 
         self.env = None # to know if env is load
@@ -22,7 +22,7 @@ class Planet:
         else :
             render_mode = "rgb_array"
 
-        if self.planet == "Earth":
+        if self.name == "Earth":
             self.env = gym.make("LunarLander-v2",
                             render_mode = render_mode,
                             gravity=-9.8,
@@ -30,13 +30,13 @@ class Planet:
                             wind_power = 5,
                             turbulence_power=0.5)
 
-        if self.planet == "Moon":
+        if self.name == "Moon":
             self.env = gym.make("LunarLander-v2",
                             render_mode = render_mode,
                             gravity=-1.6,
                             enable_wind=False)
 
-        if self.planet == "Neptune":
+        if self.name == "Neptune":
             self.env = gym.make("LunarLander-v2",
                             render_mode = render_mode,
                             gravity=-11,
@@ -44,7 +44,7 @@ class Planet:
                             wind_power = 20,
                             turbulence_power=2)
 
-        if self.planet == "Asteroid ":
+        if self.name == "Asteroid ":
             self.env = gym.make("LunarLander-v2",
                             render_mode = render_mode,
                             gravity=-0.2,

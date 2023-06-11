@@ -1,5 +1,4 @@
 .python-version
-training_data
 local_saved_agents
 # Byte-compiled / optimized / DLL files
 __pycache__/

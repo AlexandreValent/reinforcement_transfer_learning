@@ -13,7 +13,7 @@ class Configuration:
         self.act_space = [0,1,2,3]
 
         self.epsilon = 1
-        self.decrease_eps = 0.995
+        self.decrease_eps = 0.999
 
         self.lr = 0.0001
         self.decrease_lr = 0.999
@@ -22,5 +22,7 @@ class Configuration:
 
         self.nb_obs_init = 10_000
         self.nb_obs_run = 2500
+
+        self.tau = 2
 
 CFG = Configuration()
