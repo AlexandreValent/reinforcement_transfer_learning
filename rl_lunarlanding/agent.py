@@ -9,7 +9,7 @@ import torch
 import torch.nn
 from random import sample
 import os
-
+import numpy as np
 from rl_lunarlanding import network
 from rl_lunarlanding.config import CFG
 
@@ -65,45 +65,54 @@ class DQNAgent(Agent):
     def __init__(self,name,DQN,DQN_target = False):
         super().__init__ (name)
         self.net = DQN
-        self.net_target = DQN_target
-        self.opt = torch.optim.Adam(self.net.parameters(), lr = CFG.lr)
+        self.opt = torch.optim.Adam(self.net.parameters(), lr = CFG.lr, amsgrad= True)
         self.train = True
-        self.nb_upd_target = 0
+        self.DQN_target = DQN_target
+        if self.DQN_target :
+            self.net_target = network.DQN()
 
-    def learn(self, obs_old, act, rwd, obs_new):
+        self.net.eval()
+        self.net_target.eval()
+
+    def learn(self, batch):
         """
-        Learn from a single observation sample.
+        Learn from observations sample.
         """
-        obs_new = torch.tensor(obs_new)
+        # Calculate loss
+        errors = []
 
-        # We choose the network output
-        out = self.net.forward(torch.tensor(obs_old))[act]
+        for observation in batch:
+            state, action, reward, new_state, terminated = observation
 
-        # Do we update the DQN_target
-        if self.nb_upd_target % CFG.tau == 0 and self.net_target :
-            torch.save(self.net.state_dict(),"temp.pth")
-            self.net_target.load_state_dict(torch.load("temp.pth"))
-            os.remove("temp.pth")
-            print ("🎯 Succefully load target network")
-            self.nb_upd_target += 1
-
-        # We compute the target
-        if not self.net_target:
+            # Computing out
             with torch.no_grad():
-                exp = rwd + CFG.gamma * self.net.forward(obs_new).max()
-        else :
-            with torch.no_grad():
-                exp = rwd + CFG.gamma * self.net_target.forward(obs_new).max()
+                out = self.net.forward(torch.tensor(state))[action]
+            # Computing exp
+            if self.DQN_target:
+                with torch.no_grad():
+                    exp = reward + CFG.gamma * self.net_target.forward(torch.tensor(new_state)).max() * (1 - terminated)
+            else :
+                with torch.no_grad():
+                    exp = reward + CFG.gamma * self.net.forward(torch.tensor(new_state)).max() * (1 - terminated)
 
-        # Compute the loss
-        loss = torch.square(exp - out)
+            errors.append((out-exp)**2)
+
+        loss = torch.mean(torch.stack(errors))
 
         # Perform a backward propagation.
+        self.net.train()
         self.opt.zero_grad()
-        loss.sum().backward()
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.net.parameters(),max_norm=10, norm_type=2.0)
         self.opt.step()
+        self.net.eval()
 
-    def choose(self, obs_new):
+        # Update the DQN_target
+        if self.net_target :
+            for source_parameters, target_parameters in zip(self.net.parameters(), self.net_target.parameters()):
+                target_parameters.data.copy_(CFG.tau * source_parameters.data + (1.0 - CFG.tau) * target_parameters.data)
+
+    def choose(self, state):
         """
         Run an epsilon-greedy policy for next actino selection.
         learn train = True for training purpose. False to choose agent's metric.
@@ -111,14 +120,10 @@ class DQNAgent(Agent):
         # Return random action with probability epsilon
         if self.train and random.uniform(0, 1) < CFG.epsilon:
             act = sample(CFG.act_space,1)[0]
-            # print(act)
             return act
 
-        # Else, return action with highest value
+        # Else, return action with highest reward value
         with torch.no_grad():
-            # choose the values of all possible actions
-            val = self.net.forward(torch.tensor(obs_new))
-            # Choose the highest-values action
+            val = self.net.forward(torch.tensor(state)) # TODO env.action_space.sample()
             act = torch.argmax(val).numpy()
-            # print(act)
             return act

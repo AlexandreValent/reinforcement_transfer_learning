@@ -9,7 +9,7 @@ from rl_lunarlanding.config import CFG
 import shutil
 import json
 
-def get_train_data(env, agt, obs_number):
+def get_train_data(env, agt, nb_party):
     """
     Get data for training with a specified agent.
     """
@@ -21,27 +21,20 @@ def get_train_data(env, agt, obs_number):
         os.remove(file_path)
 
     scores=[]
-    obs = 0
-    parties = 0
+    party = 0
 
     agt.train = True
 
     print(f"👀 Start to get data with {agt.name}_G{agt.gen}.")
-    while obs < obs_number:
+    while party < nb_party:
         obs_old, _ = env.reset()
         done = False
         score=0
-        frame = 0
 
         while not done:
             act = agt.choose(obs_old) # We request an action from the agent.
             obs_new, rwd, terminated, truncated , _ = env.step(act)  # We apply the action on the environment.
             done = terminated or truncated
-
-            if frame > 10_000 : # Auto reload if infinite loop in env
-                print("❌ Env is crashing, reload required")
-                env.reset()
-                return get_train_data(env, agt, obs_number)
 
             score+=rwd
             data = (obs_old, act, rwd, obs_new)
@@ -50,17 +43,12 @@ def get_train_data(env, agt, obs_number):
                 pickle.dump(data, file)
 
             obs_old = obs_new
-            obs += 1
-            frame +=1
-
-            if obs % 10_000 == 0:
-                print(f"Obs {obs}/{obs_number} done.")
 
         scores.append(score)
-        parties += 1
+        party += 1
 
     avg_score = round(np.array(scores).mean(),2)
-    print(f"✅ Get data done with average score of {round(avg_score,3)} on {parties} parties.\n")
+    print(f"✅ Get data done with average score of {round(avg_score,3)} on {party} parties.\n")
 
     return
 
@@ -79,17 +67,12 @@ def lean_from_pickle(agt):
         except EOFError:
             pass
 
-    # Shuffle pickle's data for rl purpose
-    random.shuffle(data)
+    # Randomly chose data in pickle
+    batch = random.sample(data,CFG.batch_size)
 
     # Training our agent
     print(f"📖 Start to train {agt.name}_G{agt.gen}.")
-    for i, obs in enumerate(data):
-        obs_old, act, rwd, obs_new = obs
-        agt.learn(obs_old, act, rwd, obs_new)
-
-        if i % 5000 == 0:
-            print(f"Passing observation {i}/{len(data)}.")
+    agt.learn(batch)
 
     print(f"✅ {agt.name}_G{agt.gen} have learn from pickle and became {agt.name}_G{agt.gen+1}.")
     return
@@ -104,10 +87,10 @@ def auto_generation_from_random(planet,agent_G,nb_gen):
         os.makedirs(saving_path)
 
     # Saving rl info in a json file
-    json_dict = {'epsilon_init' : CFG.epsilon,'decrease_eps' : CFG.decrease_eps,
+    json_dict = {'epsilon_init' : CFG.epsilon,'decrease_eps' : CFG.decrease_eps, 'epsilon_min' : CFG.eps_min,
                  'lr_init' : CFG.lr,'decrease_lr' : CFG.decrease_lr,
                  'gamma' : CFG.gamma,
-                 'nb_obs_init' : CFG.nb_obs_init, 'nb_obs_run' : CFG.nb_obs_run,
+                 'nb_party_init' : CFG.nb_party_init, 'nb_party_run' : CFG.nb_party_run,
                  'training_env' : planet.name
                  }
     if not agent_G.net_target:
@@ -119,17 +102,19 @@ def auto_generation_from_random(planet,agent_G,nb_gen):
     with open(f'{saving_path}/rl_info.json', 'w') as outfile:
         json.dump(json_dict, outfile)
 
+    # Restart pickle
+    os.remove("local_training_data/temp.pickle")
+
     env = planet.env
     if int_gen == 0:
         print("🚀 Strating with generation 0")
         # Get random data
         random_agent = agent.RandomAgent('random')
-        get_train_data(env,random_agent,CFG.nb_obs_init)
+        get_train_data(env,random_agent,CFG.nb_party_init)
         # Train G0
         lean_from_pickle(agent_G)
 
         # Save G0
-        os.remove("local_training_data/temp.pickle")
         torch.save(agent_G.net.state_dict(),f"{saving_path}/{agent_G.name}_G{agent_G.gen}.pth")
         print(f"💾 {agent_G.name}_G{agent_G.gen} saved and pickel data deleted.")
 
@@ -138,11 +123,10 @@ def auto_generation_from_random(planet,agent_G,nb_gen):
     for i in range (int_gen, int_gen + nb_gen):
         print(f"🧬 Doing generation {i} with eps = {round(CFG.epsilon,3)} & lr ={CFG.lr}\n")
 
-        get_train_data(env,agent_G,CFG.nb_obs_run)
+        get_train_data(env,agent_G,CFG.nb_party_run)
         lean_from_pickle(agent_G)
 
         # Save new agent and delete pickel
-        os.remove("local_training_data/temp.pickle")
         agent_G.gen += 1
         torch.save(agent_G.net.state_dict(),f"{saving_path}/{agent_G.name}_G{agent_G.gen}.pth")
         print(f"💾 {agent_G.name}_G{agent_G.gen} saved and pickel data deleted.")
@@ -153,6 +137,7 @@ def auto_generation_from_random(planet,agent_G,nb_gen):
         CFG.lr = CFG.lr * CFG.decrease_lr
         CFG.epsilon = CFG.epsilon * CFG.decrease_eps
         agent_G.nb_upd_target +=1
+        agent_G.upg_target_done = False
 
     print("🌚 Ready to land !")
 
@@ -243,3 +228,71 @@ def sampling_agent(agent_name,rate):
         else :
             print(f"✅ Saving a sampling of {i} agents.")
         return
+
+def training(planet,agent_G,nb_party):
+    memory = []
+    party = 0
+    obs = 0
+    scores = []
+
+    # Dealing with directory and path for saving agent
+    saving_path = f"local_saved_agents/{agent_G.name}"
+    if not os.path.exists(saving_path):
+        os.makedirs(saving_path)
+
+    while party < nb_party:
+        # Reset params
+        state, _ = planet.env.reset()
+        done = False
+        out_of_x = False
+        score = 0
+
+        # While party is not over
+        while not done:
+            # Chose an action and calculate new state
+            action = agent_G.choose(state)
+            new_state, reward, terminated, truncated , _ = planet.env.step(action)
+
+            # Update party's variables and add data in memory
+            score += reward
+            if len(memory) >= CFG.memmory_len:
+                memory.pop(0)
+            memory.append((state, action, reward, new_state,terminated)) # Add data in memory
+            obs += 1
+            state = new_state
+            if abs(new_state[0]) > 1: # Checking if lander go outside
+                out_of_x = True
+            done = terminated or truncated # Checking if party is done.
+
+            # Learning from memory
+            if obs > CFG.batch_size and obs % CFG.learn_every == 0: # TODO : pas de learn avant learn < 1000 ?
+                batch = random.sample(memory,CFG.batch_size)
+                agent_G.learn(batch)
+            # TODO : Add clean memory if > X
+
+        # Print result of finish party
+        score = round(score,2)
+        scores.append(score)
+        party += 1
+        if planet.env.game_over :
+            print(f"💥 Party {party} (rwd = {score}, eps = {round(CFG.epsilon,2)}): Lander crash")
+        elif truncated:
+            print(f"⌛ Party {party} (rwd = {score}, eps = {round(CFG.epsilon,2)}): Run truncated ")
+        elif out_of_x :
+            print(f"❌ Party {party} (rwd = {score}, eps = {round(CFG.epsilon,2)}): Lander go outside")
+        else :
+            print(f"✅ Party {party} (rwd = {score}, eps = {round(CFG.epsilon,2)}): Lander has landed !")
+
+        # Update epsilon
+        CFG.epsilon = max(CFG.epsilon * CFG.decrease_eps , CFG.eps_min)
+
+        # Print average reward and save agent
+        if party % CFG.AVERAGE_EVERY == 0:
+            average = round(sum(scores[-CFG.AVERAGE_EVERY:]) / CFG.AVERAGE_EVERY,2)
+            agent_G.gen += 1
+            torch.save(agent_G.net.state_dict(),f"{saving_path}/{agent_G.name}_G{agent_G.gen}.pth")
+
+            print('\n' + '=' * 30 + '\n')
+            print(f"🎯 Average score on last {CFG.AVERAGE_EVERY} parties : {average}")
+            print(f"💾 {agent_G.name}_G{agent_G.gen} saved.")
+            print('\n' + '=' * 30 + '\n')

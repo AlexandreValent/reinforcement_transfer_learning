@@ -13,16 +13,24 @@ class Configuration:
         self.act_space = [0,1,2,3]
 
         self.epsilon = 1
-        self.decrease_eps = 0.999
+        self.decrease_eps = 0.95
+        self.eps_min = 0.01
 
-        self.lr = 0.0001
-        self.decrease_lr = 0.999
+        self.lr = 0.0005
+        self.decrease_lr = 1
 
-        self.gamma = 0.98
+        self.learn_every = 4
 
-        self.nb_obs_init = 10_000
-        self.nb_obs_run = 2500
+        self.gamma = 0.99
 
-        self.tau = 2
+        self.nb_party_init = 1
+        self.nb_party_run = 1
+
+        self.tau = 0.005
+
+        self.batch_size = 64
+        self.memmory_len = 100_000
+
+        self.AVERAGE_EVERY = 25
 
 CFG = Configuration()

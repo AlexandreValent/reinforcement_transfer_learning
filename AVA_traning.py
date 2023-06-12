@@ -19,22 +19,8 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 """ TRAINING with target"""
 
+DQN1_Net = network.DQN()
+DQNAgent = agent.DQNAgent('FULL_TESTING',DQN1_Net,DQN_target = True)
+planet = environment.Planet('Earth',human_render=False)
 
-
-DQN1_Net = network.DQN1()
-DQN1_Net_target = network.DQN1()
-DQNAgent = agent.DQNAgent('DQN_tar_moon',DQN1_Net,DQN_target = DQN1_Net_target)
-planet = environment.Planet('Moon',human_render=False)
-
-main.CFG.nb_obs_init = 10_000
-main.CFG.nb_obs_run = 1_500
-
-main.CFG.epsilon = 0.75
-main.CFG.decrease_eps = 0.999
-
-main.CFG.lr = 0.0001
-main.CFG.decrease_lr = 0.9999
-
-main.CFG.tau = 2
-
-main.auto_generation_from_random(planet = planet , agent_G = DQNAgent , nb_gen = 2000)
+main.training(planet = planet , agent_G = DQNAgent , nb_party= 2000)
