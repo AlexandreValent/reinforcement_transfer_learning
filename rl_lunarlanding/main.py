@@ -65,7 +65,6 @@ def training(planet,agent_G,nb_party):
         # Reset params
         state, _ = planet.env.reset()
         done = False
-        obs = 0
         party += 1
 
         dict_metrics = {"Party": party, "Score": 0,"Frame":0,

@@ -13,7 +13,7 @@ class Configuration:
         self.act_space = [0,1,2,3]
 
         self.epsilon = 1
-        self.decrease_eps = 0.95
+        self.decrease_eps = 0.99
         self.eps_min = 0.01
 
         self.lr = 0.0005

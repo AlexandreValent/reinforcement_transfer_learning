@@ -44,7 +44,7 @@ class Planet:
                             wind_power = 20,
                             turbulence_power=2)
 
-        if self.name == "Asteroid ":
+        if self.name == "Asteroid":
             self.env = gym.make("LunarLander-v2",
                             render_mode = render_mode,
                             gravity=-0.2,
