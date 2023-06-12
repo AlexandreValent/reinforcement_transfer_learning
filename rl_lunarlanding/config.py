@@ -19,7 +19,7 @@ class Configuration:
         self.lr = 0.0005
         self.decrease_lr = 1
 
-        self.learn_every = 4
+        self.learn_every = 2
 
         self.gamma = 0.99
 
@@ -28,8 +28,8 @@ class Configuration:
 
         self.tau = 0.005
 
-        self.batch_size = 64
-        self.memmory_len = 100_000
+        self.batch_size = 128
+        self.memmory_len = 75_000
 
         self.AVERAGE_EVERY = 25
 

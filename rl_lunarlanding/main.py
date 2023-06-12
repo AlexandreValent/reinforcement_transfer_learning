@@ -48,12 +48,12 @@ def training(planet,agent_G,nb_party):
             "max_from_center" : None, "max_angle" : None,"main_engine_activation" : None,"side_engines_activation" : None}
 
     # Dealing with directory and path for saving agent and csv
-    saving_path = f"local_saved_agents/{planet.name}_DQN" # Creating directory
+    saving_path = f"local_saved_agents/{agent_G.name}" # Creating directory
 
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
 
-    csv_path = os.path.join(saving_path, f"{planet.name}_DQN.csv")
+    csv_path = os.path.join(saving_path, f"{agent_G.name}.csv")
     if os.path.isfile(csv_path): # Delete csv if existing
         os.remove(csv_path)
     with open(csv_path, "w") as file:
@@ -103,6 +103,7 @@ def training(planet,agent_G,nb_party):
             if obs > CFG.batch_size and obs % CFG.learn_every == 0:
                 batch = random.sample(memory,CFG.batch_size)
                 agent_G.learn(batch)
+                CFG.epsilon = max(CFG.epsilon * CFG.decrease_eps , CFG.eps_min)
 
         # Print result of finish party
         dict_metrics['Score'] = round(dict_metrics['Score'],2)
@@ -125,8 +126,6 @@ def training(planet,agent_G,nb_party):
         if dict_metrics['Success'] :
             print(f"✅ Party {party} : Lander has landed (rwd = {dict_metrics['Score']}, eps = {round(CFG.epsilon,2)})")
 
-        # Update epsilon
-        CFG.epsilon = max(CFG.epsilon * CFG.decrease_eps , CFG.eps_min)
 
         # Print average reward and save agent
         if party % CFG.AVERAGE_EVERY == 0:

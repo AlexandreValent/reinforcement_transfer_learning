@@ -102,7 +102,7 @@ class DQNAgent(Agent):
         self.net.train()
         self.opt.zero_grad()
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.net.parameters(),max_norm=10, norm_type=2.0)
+        torch.nn.utils.clip_grad_norm_(self.net.parameters(),max_norm=50, norm_type=2.0)
         self.opt.step()
         self.net.eval()
 
