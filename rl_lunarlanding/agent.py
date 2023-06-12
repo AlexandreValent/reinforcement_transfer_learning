@@ -85,8 +85,7 @@ class DQNAgent(Agent):
             state, action, reward, new_state, terminated = observation
 
             # Computing out
-            with torch.no_grad():
-                out = self.net.forward(torch.tensor(state))[action]
+            out = self.net.forward(torch.tensor(state))[action]
             # Computing exp
             if self.DQN_target:
                 with torch.no_grad():
